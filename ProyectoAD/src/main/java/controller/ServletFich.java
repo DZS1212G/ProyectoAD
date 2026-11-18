@@ -6,11 +6,13 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-
+import entity.DatosODS;
+import entity.GestionRDF;
+import entity.GestionXLS;
+import entity.GestionJSON;
 @WebServlet("/ServletFich")
 public class ServletFich extends HttpServlet {
     private static final long serialVersionUID = 1L;
