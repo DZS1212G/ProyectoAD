@@ -21,16 +21,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Datos</title>
-  <!-- 
-  <style>
-    body { font-family: Georgia, serif; margin: 2rem auto; max-width: 900px; }
-    h1 { text-align: center; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #999; padding: .4rem .6rem; text-align: left; }
-    th { background: #9bbb59; color: #fff; }
-    .ok { color: #2e7d32; font-weight: bold; }
-  </style>
-   -->
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/estilos.css">
 </head>
 <body>

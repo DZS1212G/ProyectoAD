@@ -34,135 +34,144 @@ import jakarta.servlet.annotation.MultipartConfig;
 public class ServletFichero extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    // Evita que dos peticiones escriban el mismo fichero a la vez
-    private static final Object LOCK = new Object();
+	// Evita que dos peticiones escriban el mismo fichero a la vez
+	private static final Object LOCK = new Object();
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.sendRedirect("TratamientoFich.jsp");
-    }
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		response.sendRedirect("TratamientoFich.jsp");
+	}
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		
+		request.setCharacterEncoding("UTF-8");
 
-        request.setCharacterEncoding("UTF-8");
+		String formato = request.getParameter("formato"); // CSV, JSON, RDF, XLS, XML
+		String accion = request.getParameter("accion"); // "lectura" o "escritura"
+		
+		System.out.println("ServletFichero.doPost()");
+		String dato1 = request.getParameter("dato1");
+		String dato2 = request.getParameter("dato2");
+		String dato3 = request.getParameter("dato3");
+		String dato4 = request.getParameter("dato4");
+		String dato5 = request.getParameter("dato5");
+		String dato6 = request.getParameter("dato6");
 
-        String formato = request.getParameter("formato");
-        String accion = request.getParameter("accion"); // "lectura" o "escritura"
+		if (!"lectura".equals(accion) && !"escritura".equals(accion)) {
+			irAError(request, response, "Acción no válida", "Debe elegir lectura o escritura.");
+			return;
+		}
 
-        String dato1 = request.getParameter("dato1");
-        String dato2 = request.getParameter("dato2");
-        String dato3 = request.getParameter("dato3");
-        String dato4 = request.getParameter("dato4");
-        String dato5 = request.getParameter("dato5");
-        String dato6 = request.getParameter("dato6");
+		// Validación solo en ESCRITURA
+		if ("escritura".equals(accion) && (esVacio(dato1) || esVacio(dato2) || esVacio(dato3) || esVacio(dato4)
+				|| esVacio(dato5) || esVacio(dato6))) {
+			irAError(request, response, "Campos vacíos",
+					"En modo escritura ninguno de los 6 campos puede quedar vacío.");
+			return;
+		}
 
-        if (!"lectura".equals(accion) && !"escritura".equals(accion)) {
-            irAError(request, response, "Acción no válida", "Debe elegir lectura o escritura.");
-            return;
-        }
+		try {
+			IGestorFicheros gestor = obtenerGestor(formato);
+			String nombreFichero = obtenerNombreFichero(formato);
 
-        // Validación solo en ESCRITURA
-        if ("escritura".equals(accion)
-                && (esVacio(dato1) || esVacio(dato2) || esVacio(dato3)
-                    || esVacio(dato4) || esVacio(dato5) || esVacio(dato6))) {
-            irAError(request, response, "Campos vacíos",
-                    "En modo escritura ninguno de los 6 campos puede quedar vacío.");
-            return;
-        }
+			String rutaWeb = getServletContext().getRealPath("/ficheros");
+			System.out.println(rutaWeb);
+			File carpeta = (rutaWeb != null) ? new File(rutaWeb)
+					: new File(System.getProperty("java.io.tmpdir"), "ficheros_reto");
+			if (!carpeta.exists() && !carpeta.mkdirs()) {
+				throw new IOException("No se pudo crear la carpeta de ficheros: " + carpeta);
+			}
+			String rutaAbsoluta = new File(carpeta, nombreFichero).getAbsolutePath();
 
-        try {
-            IGestorFicheros gestor = obtenerGestor(formato);
-            String nombreFichero = obtenerNombreFichero(formato);
+			Part fichero = request.getPart("fichero");
+			boolean hayFicheroSubido = fichero != null && fichero.getSize() > 0;
+			InputStream inputStreamSubido = null;
 
-            String rutaWeb = getServletContext().getRealPath("/ficheros");
-            File carpeta = (rutaWeb != null)
-                    ? new File(rutaWeb)
-                    : new File(System.getProperty("java.io.tmpdir"), "ficheros_reto");
-            if (!carpeta.exists() && !carpeta.mkdirs()) {
-                throw new IOException("No se pudo crear la carpeta de ficheros: " + carpeta);
-            }
-            String rutaAbsoluta = new File(carpeta, nombreFichero).getAbsolutePath();
+			if (hayFicheroSubido) {
+				String subido = Paths.get(fichero.getSubmittedFileName()).getFileName().toString().toLowerCase();
+				String extension = nombreFichero.substring(nombreFichero.lastIndexOf('.')); // ".csv", ".xlsx"...
+				if (!subido.endsWith(extension)) {
+					throw new IllegalArgumentException(
+							"El fichero subido debe ser " + extension + " para el formato " + formato.toUpperCase());
+				}
+				inputStreamSubido = fichero.getInputStream();
+			}
 
-            Part fichero = request.getPart("fichero");
-            boolean hayFicheroSubido = fichero != null && fichero.getSize() > 0;
-            InputStream inputStreamSubido = null;
+			List<Registro> lista;
+			synchronized (LOCK) {
+				if (hayFicheroSubido) {
+					try (InputStream in = inputStreamSubido) {
+						Files.copy(in, Path.of(rutaAbsoluta), StandardCopyOption.REPLACE_EXISTING);
+					}
+				}
+				if ("escritura".equals(accion)) {
+					gestor.escribir(rutaAbsoluta, new Registro(dato1, dato2, dato3, dato4, dato5, dato6));
+				}
+				lista = gestor.leer(rutaAbsoluta); // tras escribir, releemos para mostrar el nuevo registro
+			}
 
-            if (hayFicheroSubido) {
-                String subido = Paths.get(fichero.getSubmittedFileName()).getFileName().toString().toLowerCase();
-                String extension = nombreFichero.substring(nombreFichero.lastIndexOf('.')); // ".csv", ".xlsx"...
-                if (!subido.endsWith(extension)) {
-                    throw new IllegalArgumentException(
-                        "El fichero subido debe ser " + extension + " para el formato " + formato.toUpperCase());
-                }
-                inputStreamSubido = fichero.getInputStream();
-            }
+			request.setAttribute("listaRegistros", lista);
+			request.setAttribute("nombreFichero", nombreFichero);
+			request.setAttribute("formato", formato.toUpperCase());
+			request.setAttribute("accion", accion);
+			if (rutaWeb != null) {
+				request.setAttribute("enlaceFichero", "ficheros/" + nombreFichero);
+			}
+			request.getRequestDispatcher("AccesoDatosA.jsp").forward(request, response);
 
-            List<Registro> lista;
-            synchronized (LOCK) {
-                if (hayFicheroSubido) {
-                    try (InputStream in = inputStreamSubido) {
-                        Files.copy(in, Path.of(rutaAbsoluta), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                }
-                if ("escritura".equals(accion)) {
-                    gestor.escribir(rutaAbsoluta, new Registro(dato1, dato2, dato3, dato4, dato5, dato6));
-                }
-                lista = gestor.leer(rutaAbsoluta); // tras escribir, releemos para mostrar el nuevo registro
-            }
+		} catch (Exception e) {
+			log("Error al tratar el fichero", e);
+			irAError(request, response, e.getClass().getSimpleName(),
+					e.getMessage() != null ? e.getMessage() : "Error de lectura/escritura del fichero.");
+		}
+	}
 
-            
-            
-            
-            request.setAttribute("listaRegistros", lista);
-            request.setAttribute("nombreFichero", nombreFichero);
-            request.setAttribute("formato", formato.toUpperCase());
-            request.setAttribute("accion", accion);
-            if (rutaWeb != null) {
-                request.setAttribute("enlaceFichero", "ficheros/" + nombreFichero);
-            }
-            request.getRequestDispatcher("AccesoDatosA.jsp").forward(request, response);
+	private void irAError(HttpServletRequest request, HttpServletResponse response, String tipo, String detalle)
+			throws ServletException, IOException {
+		request.setAttribute("tipoError", tipo);
+		request.setAttribute("detalleError", detalle);
+		request.getRequestDispatcher("Error.jsp").forward(request, response);
+	}
 
-        } catch (Exception e) {
-            log("Error al tratar el fichero", e);
-            irAError(request, response, e.getClass().getSimpleName(),
-                    e.getMessage() != null ? e.getMessage() : "Error de lectura/escritura del fichero.");
-        }
-    }
+	private boolean esVacio(String str) {
+		return str == null || str.trim().isEmpty();
+	}
 
-    private void irAError(HttpServletRequest request, HttpServletResponse response,
-                          String tipo, String detalle) throws ServletException, IOException {
-        request.setAttribute("tipoError", tipo);
-        request.setAttribute("detalleError", detalle);
-        request.getRequestDispatcher("Error.jsp").forward(request, response);
-    }
+	private IGestorFicheros obtenerGestor(String formato) {
+		switch (formato != null ? formato.toUpperCase() : "") {
+		case "CSV":
+			return new GestorCSV();
+		case "JSON":
+			return new GestorJSON();
+		case "XLS":
+		case "XLSX":
+			return new GestorXLS();
+		case "XML":
+			return new GestorXML();
+		case "RDF":
+			return new GestorRDF();
+		default:
+			throw new IllegalArgumentException("Formato no soportado: " + formato);
+		}
+	}
 
-    private boolean esVacio(String str) {
-        return str == null || str.trim().isEmpty();
-    }
-
-    private IGestorFicheros obtenerGestor(String formato) {
-        switch (formato != null ? formato.toUpperCase() : "") {
-            case "CSV":  return new GestorCSV();
-            case "JSON": return new GestorJSON();
-            case "XLS":
-            case "XLSX": return new GestorXLS();
-            case "XML":  return new GestorXML();
-            case "RDF":  return new GestorRDF();
-            default: throw new IllegalArgumentException("Formato no soportado: " + formato);
-        }
-    }
-
-    private String obtenerNombreFichero(String formato) {
-        switch (formato.toUpperCase()) {
-            case "CSV":  return "datos.csv";
-            case "JSON": return "datos.json";
-            case "XLS":
-            case "XLSX": return "datos.xlsx";
-            case "XML":  return "datos.xml";
-            case "RDF":  return "datos.rdf";
-            default: throw new IllegalArgumentException("Formato no soportado: " + formato);
-        }
-    }
+	private String obtenerNombreFichero(String formato) {
+		switch (formato.toUpperCase()) {
+		case "CSV":
+			return "datos.csv";
+		case "JSON":
+			return "datos.json";
+		case "XLS":
+		case "XLSX":
+			return "datos.xlsx";
+		case "XML":
+			return "datos.xml";
+		case "RDF":
+			return "datos.rdf";
+		default:
+			throw new IllegalArgumentException("Formato no soportado: " + formato);
+		}
+	}
 }

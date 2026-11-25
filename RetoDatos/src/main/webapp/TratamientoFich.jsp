@@ -6,17 +6,6 @@
   <meta charset="UTF-8">
   <title>Tratamiento de ficheros</title>
   
-  <!-- 
-  <style>
-    body { font-family: Georgia, serif; margin: 2rem auto; max-width: 720px; }
-    h1 { text-align: center; }
-    .fila { display: flex; gap: 3rem; }
-    label { display: block; margin: .3rem 0; }
-    .aviso { color: red; font-weight: bold; margin-top: 1rem; }
-    hr { margin: .8rem 0; }
-  </style>
-   -->
-  
 </head>
 <body>
   <h1>TRATAMIENTO FICHEROS</h1>
