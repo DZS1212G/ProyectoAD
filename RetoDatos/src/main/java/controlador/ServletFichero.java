@@ -70,7 +70,6 @@ public class ServletFichero extends HttpServlet {
 					"En modo escritura ninguno de los 6 campos puede quedar vacío.");
 			return;
 		}
-
 		try {
 			IGestorFicheros gestor = obtenerGestor(formato);
 			String nombreFichero = obtenerNombreFichero(formato);
