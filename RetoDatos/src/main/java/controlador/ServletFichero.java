@@ -22,7 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Controlador central: TratamientoFich.jsp -> ServletFichero -> AccesoDatosA.jsp (o Error.jsp)
@@ -47,10 +50,34 @@ public class ServletFichero extends HttpServlet {
 			throws ServletException, IOException {
 
 		request.setCharacterEncoding("UTF-8");
-
+		/*
 		String formato = request.getParameter("formato"); // CSV, JSON, RDF, XLS, XML
 		String accion = request.getParameter("accion"); // "lectura" o "escritura"
-
+		*/
+		Map<String, String[]> datos = request.getParameterMap();
+		
+		List<String> clavesDatos = new ArrayList<String>();
+		Pattern patron = Pattern.compile("dato\\d+");
+		String formato= datos.get("formato")[0];
+		String accion = datos.get("accion")[0];
+		
+		for (String k:datos.keySet()) {
+			if (k!=null && patron.matcher(k).matches()) {
+				clavesDatos.add(k);
+			}
+		}
+		
+		String[] datosExtraidos = new String[clavesDatos.size()];
+		for (int i = 0; i < clavesDatos.size(); i++) {
+			String claveActual = clavesDatos.get(i);
+			String datoActual[] = datos.get(claveActual);
+			if (datoActual.length==0) {
+				datosExtraidos[i] = datoActual[0];				
+			}
+			
+		}
+		
+		
 		String dato1 = request.getParameter("dato1");
 		String dato2 = request.getParameter("dato2");
 		String dato3 = request.getParameter("dato3");
