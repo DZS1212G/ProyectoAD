@@ -1,0 +1,260 @@
+/* Variables de color para mantener coherencia en toda la app */
+:root {
+  --bg-page: #f4f6f9;
+  --bg-card: #ffffff;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --accent-table: #7c9a3e; /* Variante cuidada del verde que ya usabas */
+  --border-color: #d1d5db;
+  --success-bg: #ecfdf5;
+  --success-text: #166534;
+  --error-bg: #fef2f2;
+  --error-text: #b91c1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Contenedor principal tipo tarjeta */
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  margin: 2rem auto;
+  max-width: 960px;
+  padding: 2rem 2.5rem;
+  line-height: 1.5;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  background-image: linear-gradient(var(--bg-card), var(--bg-card));
+}
+
+h1 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1.75rem;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.75rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  color: var(--text-main);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.1rem 0;
+}
+
+/* Disposición en dos columnas para TratamientoFich.jsp */
+.fila {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.fila > div {
+  flex: 1 1 300px;
+  background: #f9fafb;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+label {
+  display: block;
+  margin: 0.55rem 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* Inputs de texto, select y selector de archivo */
+input[type="text"],
+select {
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text-main);
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Radio buttons y checkboxes alineados */
+input[type="radio"] {
+  margin-right: 0.4rem;
+  accent-color: var(--primary);
+  transform: scale(1.1);
+}
+
+label:has(input[type="radio"]) {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 1.25rem;
+  cursor: pointer;
+}
+
+input[type="file"] {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+input[type="file"]::file-selector-button {
+  background-color: #e5e7eb;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  margin-right: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background-color: #d1d5db;
+}
+
+/* Botón principal de envío */
+input[type="submit"],
+button {
+  background-color: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  padding: 0.7rem 1.6rem;
+  font-size: 0.98rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+input[type="submit"]:hover,
+button:hover {
+  background-color: var(--primary-hover);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+input[type="submit"]:active,
+button:active {
+  transform: translateY(1px);
+}
+
+/* Enlaces con aspecto limpio y de acción */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Mensajes de estado y avisos */
+.aviso {
+  color: var(--error-text);
+  background-color: var(--error-bg);
+  border-left: 4px solid var(--error-text);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0 6px 6px 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.ok {
+  color: var(--success-text);
+  background-color: var(--success-bg);
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  margin: 1rem 0;
+}
+
+/* Tabla de datos en AccesoDatosA.jsp */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0 1.5rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+th,
+td {
+  border: 1px solid #e5e7eb;
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font-size: 0.94rem;
+}
+
+th {
+  background-color: var(--accent-table);
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+tr:nth-child(even) td {
+  background-color: #f9fafb;
+}
+
+tr:hover td {
+  background-color: #eff6ff;
+}
+
+/* Detalle para Error.jsp (sin tocar el HTML del JSP) */
+body:has(> h2) {
+  max-width: 720px;
+  text-align: center;
+}
+
+body:has(> h2) h1 {
+  color: var(--error-text);
+  border-bottom-color: #fecaca;
+}
+.btn-secundario {
+  display: inline-block;
+  background-color: #e5e7eb;
+  color: var(--text-main);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-right: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.btn-secundario:hover {
+  background-color: #d1d5db;
+  text-decoration: none;
+}
