@@ -32,7 +32,7 @@ import jakarta.servlet.annotation.MultipartConfig;
 @WebServlet("/ServletFichero")
 @MultipartConfig(maxFileSize = 10 * 1024 * 1024) // máx. 10 MB
 public class ServletFichero extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
 	// Evita que dos peticiones escriban el mismo fichero a la vez
 	private static final Object LOCK = new Object();
@@ -45,13 +45,12 @@ public class ServletFichero extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		
+
 		request.setCharacterEncoding("UTF-8");
 
 		String formato = request.getParameter("formato"); // CSV, JSON, RDF, XLS, XML
 		String accion = request.getParameter("accion"); // "lectura" o "escritura"
-		
-		System.out.println("ServletFichero.doPost()");
+
 		String dato1 = request.getParameter("dato1");
 		String dato2 = request.getParameter("dato2");
 		String dato3 = request.getParameter("dato3");
