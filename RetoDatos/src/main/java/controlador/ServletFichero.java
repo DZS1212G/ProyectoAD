@@ -61,93 +61,45 @@ public class ServletFichero extends HttpServlet {
 		doPost(request, response);
 	}
 
+	
+	/**
+	 * Handles HTTP POST requests for dynamic form editing and file read/write operations.
+	 * <p>
+	 * Validates the {@code accion} and {@code formato} parameters, intercepts intermediate
+	 * table editing actions (when {@code op} is present and not {@code "enviar"}), and
+	 * delegates full file processing to {@link #processFileAction(HttpServletRequest, HttpServletResponse, String, String)}.
+	 * </p>
+	 *
+	 * @param request  The {@link HttpServletRequest} containing form parameters and optional multipart file uploads.
+	 * @param response The {@link HttpServletResponse} used to forward the request to the appropriate JSP view.
+	 * @throws ServletException If a servlet-specific error occurs during request processing or forwarding.
+	 * @throws IOException      If an I/O error occurs during request processing or forwarding.
+	 */
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		request.setCharacterEncoding("UTF-8");
+	        throws ServletException, IOException {
+	    request.setCharacterEncoding("UTF-8");
 
-		validateFormatAction(request,response);
-		
+	    if (!validateFormatAction(request, response)) {
+	        return;
+	    }
 
-		String accion = request.getParameter("accion").trim().toLowerCase(); // "lectura" o "escritura"
-		String formato = request.getParameter("formato").trim();
+	    String action = request.getParameter("accion").trim().toLowerCase(); // "lectura" or "escritura"
+	    String format = request.getParameter("formato").trim();
 
-		// 1b. Si se ha pulsado un botón de la tabla (no "Enviar"), solo editamos el formulario y lo repintamos
-		String op = request.getParameter("op");
-		if (op != null && !"enviar".equals(op)) {
-			handleFormEditing(request, response, op, formato.toUpperCase(), accion.toUpperCase());
-			return;
-		}
+	    // If a table editing button was clicked (not "enviar"), update the form state and re-render
+	    String operation = request.getParameter("op");
+	    if (operation != null && !"enviar".equals(operation)) {
+	        handleFormEditing(request, response, operation, format.toUpperCase(), action.toUpperCase());
+	        return;
+	    }
 
-		// 2. En ESCRITURA, construir el registro a partir de las filas clave/valores del formulario
-		Registro nuevoRegistro = null;
-		if ("escritura".equals(accion)) {
-			try {
-				nuevoRegistro = buildRecord(request);
-			} catch (IllegalArgumentException e) {
-				forwardToErrorPage(request, response, "Datos no válidos", e.getMessage());
-				return;
-			}
-		}
-		try {
-			IGestorFicheros gestor = createFileHandler(formato);
-			String nombreFichero = resolveOutputFilename(formato);
-
-			String rutaWeb = getServletContext().getRealPath("/ficheros");
-			File carpeta = (rutaWeb != null) ? new File(rutaWeb)
-					: new File(System.getProperty("java.io.tmpdir"), "ficheros_reto");
-			if (!carpeta.exists() && !carpeta.mkdirs()) {
-				throw new IOException("No se pudo crear la carpeta de ficheros: " + carpeta);
-			}
-			String rutaAbsoluta = new File(carpeta, nombreFichero).getAbsolutePath();
-
-			// Fichero subido (solo si la petición es multipart; un GET o un POST normal no lo es)
-			String tipoContenido = request.getContentType();
-			boolean esMultipart = tipoContenido != null && tipoContenido.toLowerCase().startsWith("multipart/");
-			Part fichero = esMultipart ? request.getPart("fichero") : null;
-			boolean hayFicheroSubido = fichero != null && fichero.getSize() > 0;
-			InputStream inputStreamSubido = null;
-
-			if (hayFicheroSubido) {
-				String subido = Paths.get(fichero.getSubmittedFileName()).getFileName().toString().toLowerCase();
-				String extension = nombreFichero.substring(nombreFichero.lastIndexOf('.')); // ".csv", ".xlsx"...
-				if (!subido.endsWith(extension)) {
-					throw new IllegalArgumentException(
-							"El fichero subido debe ser " + extension + " para el formato " + formato.toUpperCase());
-				}
-				inputStreamSubido = fichero.getInputStream();
-			}
-
-			List<Registro> lista;
-			synchronized (LOCK) {
-				if (hayFicheroSubido) {
-					try (InputStream in = inputStreamSubido) {
-						Files.copy(in, Path.of(rutaAbsoluta), StandardCopyOption.REPLACE_EXISTING);
-					}
-				}
-				if (nuevoRegistro != null) {
-					gestor.escribir(rutaAbsoluta, nuevoRegistro);
-				}
-				lista = gestor.leer(rutaAbsoluta); // tras escribir, releemos para mostrar el nuevo registro
-			}
-
-			request.setAttribute("listaRegistros", lista);
-			request.setAttribute("nombreFichero", nombreFichero);
-			request.setAttribute("formato", formato.toUpperCase());
-			request.setAttribute("accion", accion);
-			if (rutaWeb != null) {
-				request.setAttribute("enlaceFichero", "ficheros/" + nombreFichero);
-			}
-			request.getRequestDispatcher("AccesoDatosA.jsp").forward(request, response);
-
-		} catch (Exception e) {
-			log("Error al tratar el fichero", e);
-			forwardToErrorPage(request, response, e.getClass().getSimpleName(),
-					e.getMessage() != null ? e.getMessage() : "Error de lectura/escritura del fichero.");
-		}
+	    // Delegate file handling (upload validation, synchronized read/write, and view forwarding)
+	    processFileAction(request, response, format, action);
 	}
+
 	
-	private void validateFormatAction(HttpServletRequest request, HttpServletResponse response)
+	private boolean validateFormatAction(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		
 		// 1. Validar 'formato' y 'accion' (que lleguen, que sean un único valor y que existan)
@@ -162,7 +114,9 @@ public class ServletFichero extends HttpServlet {
 				}
 				if (!msjError.isBlank()) {
 					forwardToErrorPage(request, response, "Petición no válida", msjError);
+					return false;
 				}
+				return true;
 	}
 	
 	
