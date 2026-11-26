@@ -1,5 +1,6 @@
 package servicios;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -9,7 +10,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-/** El fichero contiene un array JSON: [ {"dato1": "...", ...}, ... ] */
 public class GestorJSON implements IGestorFicheros {
 
     private final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
@@ -27,6 +27,6 @@ public class GestorJSON implements IGestorFicheros {
     public void escribir(String rutaArchivo, Registro nuevoRegistro) throws Exception {
         List<Registro> registros = leer(rutaArchivo);
         registros.add(nuevoRegistro);
-        mapper.writeValue(new File(rutaArchivo), registros); // reescribe el array completo (UTF-8)
+        mapper.writeValue(new File(rutaArchivo), registros);
     }
 }
