@@ -1,3 +1,5 @@
+<%@page import="java.util.Set"%>
+<%@page import="java.util.LinkedHashSet"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8"
          import="java.util.List, modelo.Registro" %>
 <%!
@@ -15,6 +17,14 @@
     String formato = (String) request.getAttribute("formato");
     String accion = (String) request.getAttribute("accion");
     String enlaceFichero = (String) request.getAttribute("enlaceFichero");
+	
+    Set<String> claves = new LinkedHashSet<>();
+    if (lista != null) {
+        for (Registro r : lista) {
+            claves.addAll(r.getCampos().keySet());
+        }
+    }
+
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -36,16 +46,30 @@
   <% } else { %>
     <table>
       <tr>
-        <th>DATO1</th><th>DATO2</th><th>DATO3</th><th>DATO4</th><th>DATO5</th><th>DATO6</th>
+      	<th>Nº</th>
+        <% for (String clave : claves) { %>
+          <th><%= esc(clave) %></th>
+        <% } %>     
       </tr>
-      <% for (Registro r : lista) { %>
+      
+      <% int numero = 0; %>
+      <% for (Registro r : lista) { numero++; %>
         <tr>
-          <td><%= esc(r.getDato1()) %></td>
-          <td><%= esc(r.getDato2()) %></td>
-          <td><%= esc(r.getDato3()) %></td>
-          <td><%= esc(r.getDato4()) %></td>
-          <td><%= esc(r.getDato5()) %></td>
-          <td><%= esc(r.getDato6()) %></td>
+          <td><%= numero %></td>
+          <% for (String clave : claves) { %>
+            <% List<String> valores = r.getValores(clave); %>
+            <td>
+              <% if (valores.size() == 1) { %>
+                <%= esc(valores.get(0)) %>
+              <% } else if (valores.size() > 1) { %>
+                <ul style="margin:0;padding-left:1.2rem">
+                  <% for (String valor : valores) { %>
+                    <li><%= esc(valor) %></li>
+                  <% } %>
+                </ul>
+              <% } %>
+            </td>
+          <% } %>
         </tr>
       <% } %>
     </table>

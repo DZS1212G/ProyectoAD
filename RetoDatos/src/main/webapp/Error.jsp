@@ -1,12 +1,18 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8" %>
+
+
 <%!
-//Controla errores de caracteres en xml que puedan resultar problematicos
-    private String esc(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                .replace("\"", "&quot;").replace("'", "&#39;");
-    }
+private String esc(String s) {
+    if (s == null) return "";
+    return s.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
+            .replace("\n", "<br>"); 
+}
 %>
+
 <%
     String tipoError = (String) request.getAttribute("tipoError");
     String detalleError = (String) request.getAttribute("detalleError");
@@ -30,8 +36,8 @@
 </head>
 <body>
   <h1>ERROR</h1>
-  <h2><%= esc(tipoError) %></h2>
-  <p><%= esc(detalleError) %></p>
+  <h2> <%=esc(tipoError) %> </h2>
+  <p><%=esc(detalleError) %></p>
   <p><a href="TratamientoFich.jsp">Volver al formulario</a></p>
 </body>
 </html>

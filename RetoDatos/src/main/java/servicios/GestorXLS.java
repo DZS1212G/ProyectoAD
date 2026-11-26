@@ -1,5 +1,7 @@
 package servicios;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import modelo.Registro;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -12,10 +14,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-/** Trabaja con formato .xlsx (Excel moderno). La fila 1 es la cabecera DATO1..DATO6. */
 public class GestorXLS implements IGestorFicheros {
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public List<Registro> leer(String rutaArchivo) throws Exception {
@@ -24,57 +31,101 @@ public class GestorXLS implements IGestorFicheros {
         if (!f.exists() || f.length() == 0) {
             return registros;
         }
+
         DataFormatter fmt = new DataFormatter();
-        try (Workbook wb = abrir(f)) {
+        try (Workbook wb = abrirLibroExistente(f)) {
             Sheet hoja = wb.getSheetAt(0);
-            for (int i = 1; i <= hoja.getLastRowNum(); i++) { // i = 1: saltamos la cabecera
+            Row filaCabecera = hoja.getRow(0);
+            if (filaCabecera == null) {
+                return registros;
+            }
+
+            List<String> cabeceras = new ArrayList<>();
+            for (int c = 0; c < filaCabecera.getLastCellNum(); c++) {
+                cabeceras.add(celda(filaCabecera, c, fmt));
+            }
+
+            for (int i = 1; i <= hoja.getLastRowNum(); i++) {
                 Row fila = hoja.getRow(i);
                 if (fila == null) continue;
-                registros.add(new Registro(
-                        celda(fila, 0, fmt), celda(fila, 1, fmt), celda(fila, 2, fmt),
-                        celda(fila, 3, fmt), celda(fila, 4, fmt), celda(fila, 5, fmt)));
+
+                Map<String, List<String>> mapa = new LinkedHashMap<>();
+                for (int c = 0; c < cabeceras.size(); c++) {
+                    String clave = cabeceras.get(c);
+                    if (clave == null || clave.isBlank()) continue;
+                    String raw = celda(fila, c, fmt);
+                    mapa.put(clave, parsearCelda(raw));
+                }
+
+                Registro r = new Registro();
+                r.setCampos(mapa);
+                registros.add(r);
             }
         }
         return registros;
     }
 
     @Override
-    public void escribir(String rutaArchivo, Registro reg) throws Exception {
+    public void escribir(String rutaArchivo, Registro nuevoRegistro) throws Exception {
+        List<Registro> existentes = leer(rutaArchivo);
+        existentes.add(nuevoRegistro);
+
+        Set<String> columnasSet = new LinkedHashSet<>();
+        for (Registro r : existentes) {
+            columnasSet.addAll(r.getCampos().keySet());
+        }
+        List<String> columnas = new ArrayList<>(columnasSet);
+
         File f = new File(rutaArchivo);
-        try (Workbook wb = abrir(f)) {
-            Sheet hoja = wb.getSheetAt(0);
-            Row fila = hoja.createRow(hoja.getLastRowNum() + 1);
-            String[] datos = {
-                reg.getDato1(), reg.getDato2(), reg.getDato3(),
-                reg.getDato4(), reg.getDato5(), reg.getDato6()
-            };
-            for (int i = 0; i < datos.length; i++) {
-                fila.createCell(i).setCellValue(datos[i]);
+        if (f.getParentFile() != null) {
+            f.getParentFile().mkdirs();
+        }
+
+        try (Workbook wb = new XSSFWorkbook()) {
+            Sheet hoja = wb.createSheet("Datos");
+
+            Row cab = hoja.createRow(0);
+            for (int c = 0; c < columnas.size(); c++) {
+                cab.createCell(c).setCellValue(columnas.get(c));
             }
+
+            for (int i = 0; i < existentes.size(); i++) {
+                Registro r = existentes.get(i);
+                Row fila = hoja.createRow(i + 1);
+                for (int c = 0; c < columnas.size(); c++) {
+                    String col = columnas.get(c);
+                    List<String> valores = r.getValores(col);
+                    fila.createCell(c).setCellValue(mapper.writeValueAsString(valores));
+                }
+            }
+
             try (FileOutputStream out = new FileOutputStream(f)) {
                 wb.write(out);
             }
         }
     }
 
-    /** Abre el libro existente o crea uno nuevo con la cabecera. */
-    private Workbook abrir(File f) throws Exception {
-        if (f.exists() && f.length() > 0) {
-            try (FileInputStream in = new FileInputStream(f)) {
-                return new XSSFWorkbook(in);
-            }
+    private Workbook abrirLibroExistente(File f) throws Exception {
+        try (FileInputStream in = new FileInputStream(f)) {
+            return new XSSFWorkbook(in);
         }
-        Workbook wb = new XSSFWorkbook();
-        Sheet hoja = wb.createSheet("Datos");
-        Row cab = hoja.createRow(0);
-        for (int i = 0; i < 6; i++) {
-            cab.createCell(i).setCellValue("DATO" + (i + 1));
-        }
-        return wb;
     }
 
     private String celda(Row fila, int col, DataFormatter fmt) {
         Cell c = fila.getCell(col);
         return c == null ? "" : fmt.formatCellValue(c);
+    }
+
+    private List<String> parsearCelda(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            return mapper.readValue(raw, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            List<String> fallback = new ArrayList<>();
+            fallback.add(raw);
+            return fallback;
+        }
     }
 }

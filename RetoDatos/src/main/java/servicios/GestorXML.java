@@ -17,23 +17,33 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-/**
- * XML con DOM. Estructura:
- * <registros><registro><dato1>..</dato1>...<dato6>..</dato6></registro>...</registros>
- */
 public class GestorXML implements IGestorFicheros {
 
     @Override
     public List<Registro> leer(String rutaArchivo) throws Exception {
         List<Registro> registros = new ArrayList<>();
         Document doc = cargar(new File(rutaArchivo));
-        NodeList nodos = doc.getElementsByTagName("registro");
-        for (int i = 0; i < nodos.getLength(); i++) {
-            Element e = (Element) nodos.item(i);
-            registros.add(new Registro(
-                    texto(e, "dato1"), texto(e, "dato2"), texto(e, "dato3"),
-                    texto(e, "dato4"), texto(e, "dato5"), texto(e, "dato6")));
+        NodeList nodosRegistro = doc.getElementsByTagName("registro");
+
+        for (int i = 0; i < nodosRegistro.getLength(); i++) {
+            Element regElem = (Element) nodosRegistro.item(i);
+            Registro r = new Registro();
+
+            NodeList camposNodes = regElem.getElementsByTagName("campo");
+            for (int j = 0; j < camposNodes.getLength(); j++) {
+                Element campoElem = (Element) camposNodes.item(j);
+                String nombreCampo = campoElem.getAttribute("nombre");
+
+                List<String> valores = new ArrayList<>();
+                NodeList items = campoElem.getElementsByTagName("item");
+                for (int k = 0; k < items.getLength(); k++) {
+                    valores.add(items.item(k).getTextContent());
+                }
+                r.setCampo(nombreCampo, valores);
+            }
+            registros.add(r);
         }
         return registros;
     }
@@ -42,25 +52,28 @@ public class GestorXML implements IGestorFicheros {
     public void escribir(String rutaArchivo, Registro reg) throws Exception {
         File f = new File(rutaArchivo);
         Document doc = cargar(f);
-        Element nuevo = doc.createElement("registro");
-        String[] datos = {
-            reg.getDato1(), reg.getDato2(), reg.getDato3(),
-            reg.getDato4(), reg.getDato5(), reg.getDato6()
-        };
-        for (int i = 0; i < datos.length; i++) {
-            Element hijo = doc.createElement("dato" + (i + 1));
-            hijo.setTextContent(datos[i]);
-            nuevo.appendChild(hijo);
+
+        Element regElem = doc.createElement("registro");
+        for (Map.Entry<String, List<String>> entry : reg.getCampos().entrySet()) {
+            Element campoElem = doc.createElement("campo");
+            campoElem.setAttribute("nombre", entry.getKey());
+
+            for (String val : entry.getValue()) {
+                Element itemElem = doc.createElement("item");
+                itemElem.setTextContent(val != null ? val : "");
+                campoElem.appendChild(itemElem);
+            }
+            regElem.appendChild(campoElem);
         }
-        doc.getDocumentElement().appendChild(nuevo);
+
+        doc.getDocumentElement().appendChild(regElem);
         guardar(doc, f);
     }
 
-    /** Carga el XML; si no existe devuelve un documento nuevo con la raíz <registros>. */
     private Document cargar(File f) throws Exception {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); // evita XXE
+        dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
         DocumentBuilder db = dbf.newDocumentBuilder();
 
         if (!f.exists() || f.length() == 0) {
@@ -69,7 +82,7 @@ public class GestorXML implements IGestorFicheros {
             return doc;
         }
         Document doc = db.parse(f);
-        limpiarEspacios(doc.getDocumentElement()); // evita que se acumulen líneas en blanco al re-indentar
+        limpiarEspacios(doc.getDocumentElement());
         return doc;
     }
 
@@ -79,11 +92,6 @@ public class GestorXML implements IGestorFicheros {
         tf.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
         tf.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
         tf.transform(new DOMSource(doc), new StreamResult(f));
-    }
-
-    private String texto(Element e, String etiqueta) {
-        NodeList n = e.getElementsByTagName(etiqueta);
-        return n.getLength() == 0 ? "" : n.item(0).getTextContent();
     }
 
     private void limpiarEspacios(Node nodo) {

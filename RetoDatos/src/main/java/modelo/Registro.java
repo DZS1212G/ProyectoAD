@@ -1,41 +1,107 @@
 package modelo;
 
-//import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
-public class Registro /*implements Serializable*/ {
-    private String dato1;
-    private String dato2;
-    private String dato3;
-    private String dato4;
-    private String dato5;
-    private String dato6;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
+public class Registro implements Serializable {
+    private Map<String, List<String>> campos = new LinkedHashMap<>();
+
+    @JsonCreator
     public Registro() {}
 
-    public Registro(String dato1, String dato2, String dato3, String dato4, String dato5, String dato6) {
-        this.dato1 = dato1;
-        this.dato2 = dato2;
-        this.dato3 = dato3;
-        this.dato4 = dato4;
-        this.dato5 = dato5;
-        this.dato6 = dato6;
+    public Registro(Map<String, String[]> parameterMap) {
+        cargarDesdeParameterMap(parameterMap);
     }
 
-    public String getDato1() { return dato1; }
-    public void setDato1(String dato1) { this.dato1 = dato1; }
+    // Crea campos "dato1", "dato2", ... a partir de un String[]
+    public Registro(String[] datosExtraidos) {
+        if (datosExtraidos == null) return;
+        for (int i = 0; i < datosExtraidos.length; i++) {
+            String clave = "dato" + (i + 1);
+            String valor = datosExtraidos[i];
+            List<String> lista = new ArrayList<>();
+            if (valor != null) {
+                lista.add(valor);
+            }
+            this.campos.put(clave, lista);
+        }
+    }
 
-    public String getDato2() { return dato2; }
-    public void setDato2(String dato2) { this.dato2 = dato2; }
+    // Asocia una cabecera/nombre a cada elemento de datosExtraidos
+    public Registro(String[] cabeceras, String[] datosExtraidos) {
+        if (datosExtraidos == null) return;
+        for (int i = 0; i < datosExtraidos.length; i++) {
+            String clave = (cabeceras != null && i < cabeceras.length && cabeceras[i] != null && !cabeceras[i].isBlank())
+                    ? cabeceras[i]
+                    : "dato" + (i + 1);
+            String valor = datosExtraidos[i];
+            List<String> lista = new ArrayList<>();
+            if (valor != null) {
+                lista.add(valor);
+            }
+            this.campos.put(clave, lista);
+        }
+    }
 
-    public String getDato3() { return dato3; }
-    public void setDato3(String dato3) { this.dato3 = dato3; }
+    public void cargarDesdeParameterMap(Map<String, String[]> parameterMap) {
+        this.campos.clear();
+        if (parameterMap == null) return;
 
-    public String getDato4() { return dato4; }
-    public void setDato4(String dato4) { this.dato4 = dato4; }
+        for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+            String clave = entry.getKey();
+            String[] valores = entry.getValue();
+            List<String> lista = (valores != null)
+                    ? new ArrayList<>(Arrays.asList(valores))
+                    : new ArrayList<>();
+            this.campos.put(clave, lista);
+        }
+    }
 
-    public String getDato5() { return dato5; }
-    public void setDato5(String dato5) { this.dato5 = dato5; }
+    public void setCampo(String clave, List<String> valores) {
+        if (clave == null) return;
+        this.campos.put(clave, valores != null ? new ArrayList<>(valores) : new ArrayList<>());
+    }
 
-    public String getDato6() { return dato6; }
-    public void setDato6(String dato6) { this.dato6 = dato6; }
+    public void setCampo(String clave, String... valores) {
+        if (clave == null) return;
+        List<String> lista = (valores != null)
+                ? new ArrayList<>(Arrays.asList(valores))
+                : new ArrayList<>();
+        this.campos.put(clave, lista);
+    }
+
+    public List<String> getValores(String clave) {
+        List<String> lista = campos.get(clave);
+        return (lista != null) ? Collections.unmodifiableList(lista) : Collections.emptyList();
+    }
+
+    public String getSimple(String clave) {
+        List<String> lista = campos.get(clave);
+        return (lista != null && !lista.isEmpty()) ? lista.get(0) : null;
+    }
+
+    public boolean tieneMultiplesValores(String clave) {
+        List<String> lista = campos.get(clave);
+        return lista != null && lista.size() > 1;
+    }
+
+    public Map<String, List<String>> getCampos() {
+        return Collections.unmodifiableMap(campos);
+    }
+
+    public void setCampos(Map<String, List<String>> campos) {
+        this.campos = new LinkedHashMap<>();
+        if (campos != null) {
+            for (Map.Entry<String, List<String>> e : campos.entrySet()) {
+                setCampo(e.getKey(), e.getValue());
+            }
+        }
+    }
 }
