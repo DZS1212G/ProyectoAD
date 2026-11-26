@@ -258,3 +258,41 @@ body:has(> h2) h1 {
   background-color: #d1d5db;
   text-decoration: none;
 }
+
+/* Botón "por defecto" para la tecla Intro: existe pero no se ve */
+    .oculto { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+    /* Solo ESCRITURA usa la tabla: se oculta en LECTURA sin necesidad de JavaScript.
+       (Si un navegador antiguo no entiende :has, la tabla simplemente queda siempre visible.) */
+    form:has(#accion option[value="LECTURA"]:checked) #editor { display: none; }
+
+    #editor { min-width: 0; max-width: 100%; }
+    .scroll { overflow-x: auto; max-width: 100%; }
+
+    #tabla-datos { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+    #tabla-datos th, #tabla-datos td {
+      border-right: 1px solid #999; border-bottom: 1px solid #999;
+      padding: .4rem .5rem; vertical-align: middle; text-align: left; box-sizing: border-box;
+    }
+    #tabla-datos tbody tr, #tabla-datos tbody tr:hover { background: #fff; }
+    #tabla-datos td { background: #fff; }
+
+    /* Columnas fijas (Nº y Clave): al hacer scroll solo se mueven los valores */
+    #tabla-datos .c-num   { position: sticky; left: 0; z-index: 2;
+                            width: 7.5rem; min-width: 7.5rem; max-width: 7.5rem; }
+    #tabla-datos .c-clave { position: sticky; left: 7.5rem; z-index: 2;
+                            width: 13rem; min-width: 13rem; box-shadow: 2px 0 3px rgba(0,0,0,.12); }
+
+    #tabla-datos td.val   { min-width: 12.5rem; }
+    #tabla-datos td.mas   { white-space: nowrap; }
+
+    #tabla-datos input[type=text] { display: block; width: 100%; box-sizing: border-box; margin: 0; }
+
+    /* Botones pequeños y sin solaparse: la × va encima de cada valor */
+    #tabla-datos button { width: auto; margin: 0; padding: .25rem .6rem; font-size: .85rem;
+                          line-height: 1.3; box-shadow: none; }
+    #tabla-datos .x { display: block; margin: 0 0 .3rem auto; padding: 0 .5rem; font-size: 1.05rem;
+                      background: #b3261e; color: #fff; border: 0; border-radius: 6px; }
+    #tabla-datos .fila-del { display: block; white-space: nowrap; }
+    #tabla-datos .x:disabled, #tabla-datos .fila-del:disabled { opacity: .35; cursor: not-allowed; }
+    #tabla-datos .etq { display: block; color: #666; font-size: .85rem; margin-bottom: .35rem; }
