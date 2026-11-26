@@ -101,7 +101,6 @@ public class ServletFichero extends HttpServlet {
 				return;
 			}
 		}
-
 		try {
 			IGestorFicheros gestor = obtenerGestor(formato);
 			String nombreFichero = obtenerNombreFichero(formato);
