@@ -80,9 +80,9 @@ public class ServletFichero extends HttpServlet {
 	        throws ServletException, IOException {
 	    request.setCharacterEncoding("UTF-8");
 
-	    if (!validateFormatAction(request, response)) {
-	        return;
-	    }
+	    if (validateFormatAction(request, response)) {
+	        
+	    
 
 	    String action = request.getParameter("accion").trim().toLowerCase(); // "lectura" or "escritura"
 	    String format = request.getParameter("formato").trim();
@@ -96,6 +96,7 @@ public class ServletFichero extends HttpServlet {
 
 	    // Delegate file handling (upload validation, synchronized read/write, and view forwarding)
 	    processFileAction(request, response, format, action);
+	    } 
 	}
 
 	
